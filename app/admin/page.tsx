@@ -647,6 +647,65 @@ export default function AdminDashboard() {
                         </div>
                       ))}
                   </div>
+                  
+                  {/* Custom Token Input Field */}
+                  <div className="pt-3">
+                    <div 
+                      className="bg-[#363636] p-4 rounded-lg"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <label className="block text-sm text-gray-400 mb-2">
+                        Add tokens for custom/random missions
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Token amount"
+                          className="flex-1 bg-[#2d2d2d] text-white border border-[#404040] p-2 rounded-lg focus:outline-none focus:border-[#4169e1]"
+                          defaultValue={participant.customTokens || ""}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            // Store temporarily without saving
+                            const elem = e.target as HTMLInputElement;
+                            elem.dataset.pendingValue = elem.value;
+                          }}
+                        />
+                        <button
+                          className="bg-[#4169e1] text-white px-4 py-2 rounded-lg hover:bg-[#3154b3] transition-all duration-200"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                            const tokenValue = parseInt(input.value) || 0;
+                            
+                            // Get current custom tokens or default to 0
+                            const currentCustomTokens = participant.customTokens || 0;
+                            
+                            // Only update if value has changed
+                            if (tokenValue !== currentCustomTokens) {
+                              const newParticipants = participants.map(p => {
+                                if (p.id === participant.id) {
+                                  // Calculate the difference to add to the total
+                                  const tokenDifference = tokenValue - (p.customTokens || 0);
+                                  
+                                  return {
+                                    ...p,
+                                    customTokens: tokenValue,
+                                    totalTokens: p.totalTokens + tokenDifference
+                                  };
+                                }
+                                return p;
+                              });
+                              
+                              updateParticipants(newParticipants);
+                            }
+                          }}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

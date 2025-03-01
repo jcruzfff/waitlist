@@ -80,6 +80,7 @@ export interface Participant {
   totalTokens: number;
   checkedIn: boolean;
   seatedAt: Date | null;
+  customTokens?: number;
 }
 
 export interface WaitlistState {

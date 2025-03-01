@@ -664,40 +664,67 @@ export default function AdminDashboard() {
                           placeholder="Token amount"
                           className="flex-1 bg-[#2d2d2d] text-white border border-[#404040] p-2 rounded-lg focus:outline-none focus:border-[#4169e1]"
                           defaultValue={participant.customTokens || ""}
+                          onClick={e => e.stopPropagation()}
+                          onKeyDown={e => e.stopPropagation()}
                           onChange={(e) => {
                             e.stopPropagation();
-                            // Store temporarily without saving
-                            const elem = e.target as HTMLInputElement;
-                            elem.dataset.pendingValue = elem.value;
+                            // Validate number input
+                            const value = e.target.value;
+                            if (value && !/^\d*$/.test(value)) {
+                              e.target.value = value.replace(/[^\d]/g, '');
+                            }
                           }}
                         />
                         <button
                           className="bg-[#4169e1] text-white px-4 py-2 rounded-lg hover:bg-[#3154b3] transition-all duration-200"
                           onClick={(e) => {
                             e.stopPropagation();
-                            const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                            const tokenValue = parseInt(input.value) || 0;
                             
-                            // Get current custom tokens or default to 0
-                            const currentCustomTokens = participant.customTokens || 0;
-                            
-                            // Only update if value has changed
-                            if (tokenValue !== currentCustomTokens) {
-                              const newParticipants = participants.map(p => {
-                                if (p.id === participant.id) {
-                                  // Calculate the difference to add to the total
-                                  const tokenDifference = tokenValue - (p.customTokens || 0);
-                                  
-                                  return {
-                                    ...p,
-                                    customTokens: tokenValue,
-                                    totalTokens: p.totalTokens + tokenDifference
-                                  };
-                                }
-                                return p;
-                              });
+                            try {
+                              const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                              const tokenValue = parseInt(input.value || "0") || 0;
                               
-                              updateParticipants(newParticipants);
+                              if (tokenValue < 0) {
+                                alert("Token value cannot be negative");
+                                return;
+                              }
+                              
+                              // Get current custom tokens or default to 0
+                              const currentCustomTokens = participant.customTokens || 0;
+                              
+                              // Only update if value has changed
+                              if (tokenValue !== currentCustomTokens) {
+                                // Calculate the difference to add to the total
+                                const tokenDifference = tokenValue - currentCustomTokens;
+                                
+                                const newParticipants = [...participants];
+                                const participantIndex = newParticipants.findIndex(p => p.id === participant.id);
+                                
+                                if (participantIndex !== -1) {
+                                  newParticipants[participantIndex] = {
+                                    ...newParticipants[participantIndex],
+                                    customTokens: tokenValue,
+                                    totalTokens: newParticipants[participantIndex].totalTokens + tokenDifference
+                                  };
+                                  
+                                  // Create a visual feedback element
+                                  const feedbackEl = document.createElement('span');
+                                  feedbackEl.textContent = tokenDifference >= 0 ? `+${tokenDifference} tokens added!` : `${tokenDifference} tokens removed`;
+                                  feedbackEl.className = 'text-green-500 text-sm ml-2 animate-fade-in';
+                                  e.currentTarget.parentNode?.appendChild(feedbackEl);
+                                  
+                                  // Remove the feedback element after 2 seconds
+                                  setTimeout(() => {
+                                    if (feedbackEl.parentNode) {
+                                      feedbackEl.parentNode.removeChild(feedbackEl);
+                                    }
+                                  }, 2000);
+                                  
+                                  updateParticipants(newParticipants);
+                                }
+                              }
+                            } catch (error) {
+                              console.error('Error updating custom tokens:', error);
                             }
                           }}
                         >
